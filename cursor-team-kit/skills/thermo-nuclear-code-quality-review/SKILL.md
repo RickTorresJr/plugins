@@ -1,7 +1,7 @@
 ---
 name: thermo-nuclear-code-quality-review
 description: Run an extremely strict maintainability review for abstraction quality, giant files, and spaghetti-condition growth. Use for a thermo-nuclear code quality review, thermonuclear review, deep code quality audit, or especially harsh maintainability review.
-disable-model-invocation: true
+disable-model-invocation: false
 ---
 
 # Thermo-Nuclear Code Quality Review
@@ -31,11 +31,12 @@ Apply the baseline prompt above, plus these explicit review rules:
    - Assume there is often a "code judo" move available: a re-organization that uses the existing architecture more effectively and makes the change dramatically simpler and more elegant.
    - If you see a path to delete complexity rather than rearrange it, push hard for that path.
 
-1. **Do not let a PR push a file from under 1k lines to over 1k lines without a very strong reason.**
-   - Treat this as a strong code-quality smell by default.
-   - Prefer extracting helpers, subcomponents, modules, or local abstractions instead of letting a file sprawl past 1000 lines.
-   - If the diff crosses that threshold, explicitly ask whether the code should be decomposed first.
-   - Only waive this if there is a compelling structural reason and the resulting file is still clearly organized.
+1. **Use 1000 lines as a warning threshold, not an approval requirement.**
+    * When a PR pushes a file from below 1000 lines to above 1000 lines, explicitly notify the author and inspect whether the file remains cohesive, navigable and easy to reason about.
+    * Do not block approval or require decomposition because of line count alone. Allow reasonable overage when keeping the code together is simpler and clearer than splitting it.
+    * Recommend a split only when it creates a natural ownership boundary and materially reduces total complexity. Do not trade file length for extra indirection, fragmented control flow, duplicated state, awkward APIs or more concepts.
+    * Increase scrutiny as a handwritten file grows into several thousand lines. A file approaching 10,000 lines is normally unreasonable and should create strong pressure to find a natural decomposition, unless the file is unusually cohesive and splitting it would clearly make the design worse.
+    * Generated code, declarative data and inherently cohesive implementations may justify much larger files. Judge the structure and maintenance cost, not the number alone.
 
 2. **Do not allow random spaghetti growth in existing code.**
    - Be highly suspicious of new ad-hoc conditionals, scattered special cases, or one-off branches inserted into unrelated flows.
@@ -92,7 +93,7 @@ Escalate findings when you see:
 
 - A complicated implementation where a cleaner reframing could delete whole categories of complexity.
 - Refactors that move code around but fail to reduce the number of concepts a reader must hold in their head.
-- A file crossing 1000 lines due to the PR, especially if the new code could be split out.
+- Extreme file growth that makes responsibilities, navigation or safe modification unclear, especially when a natural split would reduce total complexity.
 - New conditionals bolted onto unrelated code paths.
 - One-off booleans, nullable modes, or flags that complicate existing control flow.
 - Feature-specific logic leaking into general-purpose modules.
@@ -117,7 +118,7 @@ When you identify a code-quality problem, prefer suggestions like:
 - Change the ownership boundary so the feature becomes a natural extension of an existing abstraction.
 - Turn special-case logic into a simpler default flow with fewer exceptions.
 - Extract a helper or pure function.
-- Split a large file into smaller focused modules.
+- Split a large file into smaller focused modules only when the split reduces total complexity and creates natural ownership boundaries.
 - Move feature-specific logic behind a dedicated abstraction.
 - Replace condition chains with a typed model or explicit dispatcher.
 - Separate orchestration from business logic.
@@ -141,7 +142,7 @@ If the implementation missed an opportunity for a dramatic simplification, say t
 
 Good phrases:
 
-- `this pushes the file past 1k lines. can we decompose this first?`
+- `this crosses the 1k warning threshold. let's check whether the file remains cohesive and whether a split would reduce total complexity rather than only reduce the line count.`
 - `this adds another special-case branch into an already busy flow. can we move this behind its own abstraction?`
 - `this works, but it makes the surrounding code more spaghetti. let's keep the behavior and restructure the implementation.`
 - `this feels like feature logic leaking into a shared path. can we isolate it?`
@@ -173,20 +174,22 @@ The bar for approval is:
 
 - no clear structural regression
 - no obvious missed opportunity to make the implementation dramatically simpler when such a path is visible
-- no unjustified file-size explosion
+- no file growth that creates concrete cohesion, navigation or safe-change problems
 - no obvious spaghetti-growth from special-case branching
 - no obviously hacky or magical abstraction that makes the code harder to reason about
 - no unnecessary wrapper/cast/optionality churn obscuring the real design
 - no clear architecture-boundary leak or avoidable canonical-helper duplication
 - no missed opportunity for an obvious decomposition that would materially improve maintainability
 
-Treat these as presumptive blockers unless the author can justify them clearly:
+Crossing 1000 lines is not a presumptive blocker. Report it as a warning, then judge whether the file remains cohesive, navigable and simpler than the available decompositions. Approve reasonable overage. Do not demand a split that increases total complexity merely to reduce line count.
+
+Review these as candidate blockers that require concrete evidence:
 
 - the PR preserves a lot of incidental complexity when there is a plausible code-judo move that would delete it
-- the PR pushes a file from below 1000 lines to above 1000 lines
+- the PR creates an extremely large or sprawling file with mixed responsibilities, poor navigability or unsafe change coupling and there is a clear decomposition that would reduce total complexity
 - the PR adds ad-hoc branching that makes an existing flow more tangled
 - the PR solves a local problem by scattering feature checks across shared code
 - the PR adds an unnecessary abstraction, wrapper, or cast-heavy contract that makes the design more indirect
 - the PR duplicates an existing helper or puts logic in the wrong layer when there is a clear canonical home
 
-If those conditions are not met, leave explicit, actionable feedback and push for a cleaner decomposition.
+Treat a concern as blocking only when concrete evidence demonstrates specific structural or maintainability harm. State the demonstrated harm and identify the smallest acceptable correction. Require decomposition only when a specific, feasible decomposition directly addresses that harm and is likely to reduce total complexity without introducing greater indirection, coupling or fragmented control flow. If concrete harm is not demonstrated, report the concern as non-blocking.

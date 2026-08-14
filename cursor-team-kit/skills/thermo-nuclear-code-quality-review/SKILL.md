@@ -31,12 +31,12 @@ Apply the baseline prompt above, plus these explicit review rules:
    - Assume there is often a "code judo" move available: a re-organization that uses the existing architecture more effectively and makes the change dramatically simpler and more elegant.
    - If you see a path to delete complexity rather than rearrange it, push hard for that path.
 
-1. **Use 1000 lines as a warning threshold, not an approval requirement.**
-    * When a PR pushes a file from below 1000 lines to above 1000 lines, explicitly notify the author and inspect whether the file remains cohesive, navigable and easy to reason about.
-    * Do not block approval or require decomposition because of line count alone. Allow reasonable overage when keeping the code together is simpler and clearer than splitting it.
-    * Recommend a split only when it creates a natural ownership boundary and materially reduces total complexity. Do not trade file length for extra indirection, fragmented control flow, duplicated state, awkward APIs or more concepts.
-    * Increase scrutiny as a handwritten file grows into several thousand lines. A file approaching 10,000 lines is normally unreasonable and should create strong pressure to find a natural decomposition, unless the file is unusually cohesive and splitting it would clearly make the design worse.
-    * Generated code, declarative data and inherently cohesive implementations may justify much larger files. Judge the structure and maintenance cost, not the number alone.
+1. **Use 1000 lines as the point where explicit structural assessment becomes required, never as a target, maximum, budget or pass/fail criterion.**
+    * Apply this structural assessment whenever a change causes a handwritten file to exceed 1000 lines or materially changes the size, behavior, responsibilities or control flow of a handwritten file already above 1000 lines. Do not wait for another threshold crossing.
+    * Scale scrutiny continuously with the resulting file size and the nature and magnitude of the change. A multi-thousand-line handwritten file warrants substantially deeper examination than one just above 1000 lines, but size alone never determines the verdict. For multi-thousand-line files, explicitly assess responsibilities, navigation, change coupling and plausible decomposition boundaries. The assessment is required; decomposition is not.
+    * Never reduce line count as an end in itself. Do not compress expressions, combine unrelated branches, remove useful structure, avoid appropriate helpers or split cohesive code into extra modules merely to lower the count. Prefer the implementation with lower total cognitive and architectural complexity, even when it is longer.
+    * Treat a file-size concern as blocking only when concrete evidence demonstrates specific structural or maintainability harm and a specific, feasible decomposition would directly address that harm while producing a net reduction in total complexity.
+    * Generated code, declarative data and inherently cohesive implementations may justify much larger files. Judge actual structure and maintenance cost, not line count alone.
 
 2. **Do not allow random spaghetti growth in existing code.**
    - Be highly suspicious of new ad-hoc conditionals, scattered special cases, or one-off branches inserted into unrelated flows.
